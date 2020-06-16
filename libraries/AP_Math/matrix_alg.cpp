@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma GCC optimize("O2")
+#pragma GCC optimize("O3")
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -285,8 +285,7 @@ bool inverse4x4(float m[],float invOut[])
     uint8_t i;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    //disable FE_INEXACT detection as it fails on mac os runs
-    int old = fedisableexcept(FE_INEXACT | FE_OVERFLOW);
+    int old = fedisableexcept(FE_OVERFLOW);
     if (old < 0) {
         hal.console->printf("inverse4x4(): warning: error on disabling FE_OVERFLOW floating point exception\n");
     }
@@ -406,6 +405,12 @@ bool inverse4x4(float m[],float invOut[])
 
     det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (old >= 0 && feenableexcept(old) < 0) {
+        hal.console->printf("inverse4x4(): warning: error on restoring floating exception mask\n");
+    }
+#endif
+
     if (is_zero(det) || isinf(det)){
         return false;
     }
@@ -414,13 +419,6 @@ bool inverse4x4(float m[],float invOut[])
 
     for (i = 0; i < 16; i++)
         invOut[i] = inv[i] * det;
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (old >= 0 && feenableexcept(old) < 0) {
-        hal.console->printf("inverse4x4(): warning: error on restoring floating exception mask\n");
-    }
-#endif
-
     return true;
 }
 

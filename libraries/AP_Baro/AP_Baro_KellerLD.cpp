@@ -67,7 +67,9 @@ bool AP_Baro_KellerLD::_init()
         return false;
     }
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("PANIC: AP_Baro_KellerLD: failed to take serial semaphore for init");
+    }
 
     // high retries for init
     _dev->set_retries(10);

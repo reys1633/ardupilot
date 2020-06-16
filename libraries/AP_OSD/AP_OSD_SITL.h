@@ -25,8 +25,7 @@
 #include <SFML/Graphics.hpp>
 #endif
 
-class AP_OSD_SITL : public AP_OSD_Backend
-{
+class AP_OSD_SITL : public AP_OSD_Backend {
 
 public:
     static AP_OSD_Backend *probe(AP_OSD &osd);

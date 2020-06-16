@@ -1,0 +1,31 @@
+ardupilot/libraries/AP_BoardConfig.cpp
+
+AP_GROUPINFO("PWM_COUNT",   0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
+
+AP_GROUPINFO("SER1_RTSCTS", 1, AP_BoardConfig, state.ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+
+AP_GROUPINFO("SER2_RTSCTS", 2, AP_BoardConfig, state.ser2_rtscts, 2)
+
+AP_GROUPINFO("SAFETYENABLE",3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
+
+AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, state.ignore_safety_channels, 0)
+
+AP_GROUPINFO("VBUS_MIN",   15, AP_BoardConfig, _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN)
+
+AP_GROUPINFO("VSERVO_MIN", 16, AP_BoardConfig, _vservo_min,  0)
+
+
+
+// HARP Munition Configuration
+
+#define BOARD_PWM_COUNT_DEFAULT 0
+
+#define BOARD_CONFIG_BOARD_VOLTAGE_MIN 0.0f
+
+#define BOARD_SAFETY_ENABLE 0
+
+#define BOARD_SER1_RTSCTS_DEFAULT 0
+
+
+
+

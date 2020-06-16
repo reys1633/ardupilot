@@ -81,7 +81,7 @@ enum BLDC_STATUS {
 
 using namespace Linux;
 
-extern const AP_HAL::HAL& hal;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : _dev(std::move(dev))
@@ -109,7 +109,9 @@ void RCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     if (_dev->transfer(&data, sizeof(data), nullptr, 0)) {
         _state = BEBOP_BLDC_STARTED;
@@ -136,7 +138,9 @@ void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->transfer((uint8_t *)&data, sizeof(data), nullptr, 0);
 
@@ -151,7 +155,9 @@ bool RCOutput_Bebop::_get_info(struct bldc_info *info)
 
     memset(info, 0, sizeof(struct bldc_info));
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
     _dev->read_registers(BEBOP_BLDC_GET_INFO, (uint8_t*)info, sizeof(*info));
     _dev->get_semaphore()->give();
     return true;
@@ -180,7 +186,9 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     } data;
 
     memset(&data, 0, sizeof(data));
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return -EBUSY;
+    }
 
     _dev->read_registers(BEBOP_BLDC_GETOBSDATA, (uint8_t *)&data, sizeof(data));
     _dev->get_semaphore()->give();
@@ -233,7 +241,9 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 
 void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->write_register(BEBOP_BLDC_TOGGLE_GPIO, mask);
     _dev->get_semaphore()->give();
@@ -243,7 +253,9 @@ void RCOutput_Bebop::_stop_prop()
 {
     uint8_t data = BEBOP_BLDC_STOP_PROP;
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->transfer(&data, sizeof(data), nullptr, 0);
     _dev->get_semaphore()->give();
@@ -253,7 +265,9 @@ void RCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->transfer(&data, sizeof(data), nullptr, 0);
     _dev->get_semaphore()->give();
@@ -261,7 +275,9 @@ void RCOutput_Bebop::_clear_error()
 
 void RCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->write_register(BEBOP_BLDC_PLAY_SOUND, sound);
     _dev->get_semaphore()->give();
@@ -293,7 +309,9 @@ void RCOutput_Bebop::play_note(uint8_t pwm,
     msg.period = htobe16(period_us);
     msg.duration = htobe16(duration_ms);
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     _dev->transfer((uint8_t *)&msg, sizeof(msg), nullptr, 0);
     _dev->get_semaphore()->give();

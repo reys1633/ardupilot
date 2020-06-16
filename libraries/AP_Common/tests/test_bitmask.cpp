@@ -4,7 +4,7 @@
 
 TEST(Bitmask, Tests)
 {
-    Bitmask<49> x;
+    Bitmask x{49};
 
     EXPECT_EQ(-1, x.first_set());
     x.set(5);
@@ -40,7 +40,7 @@ TEST(Bitmask, Tests)
 
 TEST(Bitmask, SetAll)
 {
-    Bitmask<49> x;
+    Bitmask x{49};
     EXPECT_EQ(-1, x.first_set());
     EXPECT_EQ(false, x.get(45));
     x.setall();
@@ -59,13 +59,13 @@ TEST(Bitmask, SetAll)
 
 TEST(Bitmask, Assignment)
 {
-    Bitmask<49> x;
+    Bitmask x{49};
     x.set(0);
     x.set(5);
     x.set(6);
     x.set(48);
 
-    Bitmask<49> y;
+    Bitmask y{49};
     y = x;
     x.clear(0);
     EXPECT_EQ(true, y.get(0));
@@ -75,5 +75,3 @@ TEST(Bitmask, Assignment)
 }
 
 AP_GTEST_MAIN()
-
-int hal = 0; // bizarrely, this fixes an undefined-symbol error but doesn't raise a type exception.  Yay.

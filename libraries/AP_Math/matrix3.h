@@ -38,7 +38,6 @@
 #pragma once
 
 #include "vector3.h"
-#include "vector2.h"
 
 // 3x3 matrix with elements of type T
 template <typename T>
@@ -203,7 +202,7 @@ public:
      * @return If this matrix is invertible, then true is returned. Otherwise,
      * \p inv is unmodified and false is returned.
      */
-    bool inverse(Matrix3<T>& inv) const WARN_IF_UNUSED;
+    bool inverse(Matrix3<T>& inv) const;
 
     /**
      * Invert this matrix if it is invertible.
@@ -211,7 +210,7 @@ public:
      * @return Return true if this matrix could be successfully inverted and
      * false otherwise.
      */
-    bool invert() WARN_IF_UNUSED;
+    bool invert();
 
     // zero the matrix
     void        zero(void);
@@ -225,7 +224,7 @@ public:
     }
 
     // check if any elements are NAN
-    bool        is_nan(void) WARN_IF_UNUSED
+    bool        is_nan(void)
     {
         return a.is_nan() || b.is_nan() || c.is_nan();
     }

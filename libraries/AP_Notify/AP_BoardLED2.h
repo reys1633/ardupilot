@@ -21,6 +21,9 @@
 
 #include "NotifyDevice.h"
 
+#define HIGH 1
+#define LOW 0
+
 class AP_BoardLED2: public NotifyDevice
 {
 public:

@@ -25,15 +25,16 @@ public:
     static void handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb);
 
 private:
-
-    static void _update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count);
+    static bool take_registry();
+    static void give_registry();
 
     uint8_t _instance;
 
     bool new_pressure;
     float _pressure;
     float _temperature;
-    uint8_t  _pressure_count;
+    uint64_t _last_timestamp;
+
     HAL_Semaphore _sem_baro;
 
     AP_UAVCAN* _ap_uavcan;

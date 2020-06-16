@@ -26,7 +26,6 @@ SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
 {
     switch (config) {
     case SERIAL_CONFIG_8N1:
-    case SERIAL_CONFIG_8N1I:
         data_width = 8;
         byte_width = 10;
         stop_mask = 0x200;

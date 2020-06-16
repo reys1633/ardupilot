@@ -1,0 +1,140 @@
+acsAP from 07222019logonly
+
+turned on open loop mode in acsap.cpp
+tofmax 3->10
+
+toneqty 64
+openloop test pattern starting at
+long period 0.75 short 0.25
+ports to the left, #2 to the right (yaw?)
+Plan: power/charge, after tone, pitch movement
+
+open loop Mavlink: 
+0.25-0.498 16 (SRM)
+1.0-1.098   1
+2.0-2.098   2
+2.5-2.748  32
+3.0-3.098   4
+4.0-4.098   8
+
+2   3(nothing)   4   1
+
+#3 valve worked some this morning (9/24) but then stopped responding at all.
+plan:
+move valve/tank assy out enough to confirm which wire goes to #3.
+Driver FET should be open circuit? disconnect?
+Apply 120 psi and 50VDC from power supply to check valve function
+
+
+Bench Test Software (masonLog0919)
+    missileRRT.h
+double const tmax      = 15.0; //2.5;   // time to stop execution loop
+double const tofmax    = 10.0; //3.0; // 3.0;
+double const gThreshold= -9.8*2; ???
+
+    acsAP.cpp
+bool openloop = true;
+
+Flight Test Software
+
+Sequence
+Pressurize
+Charge Switch -> lipo >resistor>supercaps
+    SW STart
+    Charge Delay
+    Tone
+Launch Button -> squib
+    Detect Accel
+    term @ tofMax 1.5????
+    Parachute
+    
+After refactoring INS_generic.cpp
+Andrew: is parachute & p-squib loaded? no
+check sd card data from last bench test
+create new file names in INS_generic.cpp
+/APN/v001.dat // comment with date 09302019_0944
+new file created (yes)
+fd = open( "/APM/v002.dat", O_WRONLY|O_CREAT );//09302019_1026
+forgot to re-build....try again
+build and load sw (yes)
+attach charge cable & air - yes
+charge
+hear tone - bump for launch sim
+small movements, watch LEDs - yes green SRM, yellow parachute
+remove SD, check data - yes 
+check SD space 4.3g used 3.8g free
+replace SD - Yes
+change tPara     = 2.5 => 1.5;// low impulse, no SRM
+change tofmax    = 5.0 => 2.5;
+build & load sw, run w/mavlink - Yes
+remove USB cable
+install in launcher
+remove airchuck nipple
+connect to bottle and reg
+pressurize to 4ksi
+remove charge hose
+replace rubber protector
+turn on Mavic
+
+start camera
+charge switch
+tone -> launch button
+catch if necessary
+
+turn off charge switch
+remove SD card, analyze
+
+
+
+
+mavproxy.py --setup --master /dev/serial/by-id/
+munition
+usb-ArduPilot_fmuv4_270033000C51373137353433-if00
+
+wired pixracer
+
+ mavproxy.py --setup --master /dev/serial/by-id/
+ 
+ usb-3D_Robotics_PX4_BL_FMU_v4.x_0-if00 pr installed 
+-ArduPilot_fmuv4_27003A000C51373137353433-if00 pr w/wires
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

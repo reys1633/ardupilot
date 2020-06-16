@@ -109,7 +109,9 @@ bool AP_Compass_IST8308::init()
 {
     uint8_t reset_count = 0;
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
 
     // high retries for init
     _dev->set_retries(10);
@@ -158,17 +160,15 @@ bool AP_Compass_IST8308::init()
 
     _dev->get_semaphore()->give();
 
-    //register compass instance
-    _dev->set_device_type(DEVTYPE_IST8308);
-    if (!register_compass(_dev->get_bus_id(), _instance)) {
-        return false;
-    }
-    set_dev_id(_instance, _dev->get_bus_id());
+    _instance = register_compass();
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), _dev->get_bus_id(), _dev->get_bus_address());
 
     set_rotation(_instance, _rotation);
+
+    _dev->set_device_type(DEVTYPE_IST8308);
+    set_dev_id(_instance, _dev->get_bus_id());
 
     if (_force_external) {
         set_external(_instance, true);

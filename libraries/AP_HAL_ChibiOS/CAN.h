@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -26,13 +26,9 @@
 #include <uavcan/uavcan.hpp>
 #include <uavcan/time.hpp>
 
-#include "CANThread.h"
-#include "CANClock.h"
-#if defined(STM32H7XX)
-#include "CANFDIface.h"
-#else
-#include "CANIface.h"
-#endif
+#include <uavcan_stm32/thread.hpp>
+#include <uavcan_stm32/clock.hpp>
+#include <uavcan_stm32/can.hpp>
 
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
@@ -70,7 +66,7 @@ public:
 
 private:
     bool initialized_;
-    ChibiOS_CAN::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
+    uavcan_stm32::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
 };
 
 }

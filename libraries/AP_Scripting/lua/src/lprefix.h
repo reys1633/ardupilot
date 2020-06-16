@@ -43,10 +43,3 @@
 
 #endif
 
-// load posix compatibility functions
-#include <AP_Filesystem/posix_compat.h>
-
-#define lua_writestring(s,l) printf("%s", s)
-#define lua_writestringerror(s,l) lua_writestring(s,l)
-
-

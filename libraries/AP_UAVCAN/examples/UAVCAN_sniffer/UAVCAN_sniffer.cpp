@@ -35,17 +35,12 @@
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
-#include <com/hex/equipment/flow/Measurement.hpp>
-
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define UAVCAN_NODE_POOL_SIZE 8192
-#ifdef UAVCAN_NODE_POOL_BLOCK_SIZE
-#undef UAVCAN_NODE_POOL_BLOCK_SIZE
-#endif
 #define UAVCAN_NODE_POOL_BLOCK_SIZE 256
 
 #define debug_uavcan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
@@ -68,19 +63,19 @@ private:
         }
 
         uavcan::UtcDuration utc_adjustment;
-        virtual void adjustUtc(uavcan::UtcDuration adjustment) override
+        virtual void adjustUtc(uavcan::UtcDuration adjustment)
         {
             utc_adjustment = adjustment;
         }
 
     public:
-        virtual uavcan::MonotonicTime getMonotonic() const override
+        virtual uavcan::MonotonicTime getMonotonic() const
         {
             uavcan::uint64_t usec = 0;
             usec = AP_HAL::micros64();
             return uavcan::MonotonicTime::fromUSec(usec);
         }
-        virtual uavcan::UtcTime getUtc() const override
+        virtual uavcan::UtcTime getUtc() const
         {
             uavcan::UtcTime utc;
             uavcan::uint64_t usec = 0;
@@ -151,7 +146,6 @@ MSG_CB(uavcan::equipment::power::BatteryInfo, BatteryInfo);
 MSG_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand)
 MSG_CB(uavcan::equipment::esc::RawCommand, RawCommand)
 MSG_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
-MSG_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 void UAVCAN_sniffer::init(void)
 {
@@ -225,7 +219,6 @@ void UAVCAN_sniffer::init(void)
     START_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand);
     START_CB(uavcan::equipment::esc::RawCommand, RawCommand);
     START_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
-    START_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 
     /*
@@ -294,10 +287,14 @@ void loop(void)
     // auto-reboot for --upload
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
-        hal.console->discard_input();
+        while (hal.console->available()) {
+            hal.console->read();
+        }
         hal.scheduler->reboot(false);
     }
-    hal.console->discard_input();
+    while (hal.console->available()) {
+        hal.console->read();
+    }
 }
 
 AP_HAL_MAIN();

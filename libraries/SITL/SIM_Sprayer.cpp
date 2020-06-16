@@ -20,16 +20,14 @@
 #include "AP_HAL/AP_HAL.h"
 #include "AP_Math/AP_Math.h"
 
-#include <stdio.h>
-
 using namespace SITL;
 
 // table of user settable parameters
 const AP_Param::GroupInfo Sprayer::var_info[] = {
 
     // @Param: ENABLE
-    // @DisplayName: Sprayer Sim enable/disable
-    // @Description: Allows you to enable (1) or disable (0) the Sprayer simulation
+    // @DisplayName: Gripper servo Sim enable/disable
+    // @Description: Allows you to enable (1) or disable (0) the gripper servo simulation
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ENABLE", 0, Sprayer, sprayer_enable, 0),
@@ -122,3 +120,4 @@ bool Sprayer::should_report()
 
     return false;
 }
+

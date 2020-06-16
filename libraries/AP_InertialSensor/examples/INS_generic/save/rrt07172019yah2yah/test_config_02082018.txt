@@ -1,0 +1,29 @@
+nozzle hardware:
+noz 1 pos pitch  
+noz 2 neg yaw
+noz 3 neg pitch
+noz 4 pos yaw
+
+pixhawk/pixracer INS
+        accel[2] = acc.x; // pix x ==> msl z
+        accel[1] = acc.y; // pix y ==> msl y (no change
+        accel[0] = acc.z; // pix z ==> msl x
+
+        gyro[2]  = gyr.x; // pix roll ==> msl yaw
+        gyro[1]  = gyr.y; // pix pitch ==> msl pitch (no change)
+        gyro[0]  = gyr.z; // pix yaw ==> msl roll
+
+software:
+acsAP.cpp 83   // fyzCmd[0] = 0.0; // zero out y (yaw) command
+
+acsAP.cpp 154-157
+          //pwmCmd[0] = 0; neg yaw    // noz 2
+            pwmCmd[1] = 0; neg pitch  // noz 3
+            pwmCmd[2] = 0; pos yaw    // noz 4
+            pwmCmd[3] = 0; pos pitch  // noz 1
+neg yaw
+tof:  6.723 pct: 13 cnt:  3000 gyro:  -1.19   0.31   1.67 rpy:  -2.26   1.64  13.84 lau: 1 pC:    0 vlv: 1 0 0 0
+tof:  7.282 pct: 12 cnt:  3250 gyro:  -0.47   0.02   0.35 rpy:  -2.55   1.38  14.11 lau: 1 pC:    0 vlv: 1 0 0 0
+tof:  7.843 pct: 13 cnt:  3500 gyro:  -0.17   0.15   0.59 rpy:  -2.73   1.55  14.41 lau: 1 pC:    0 vlv: 1 0 0 0
+
+ 

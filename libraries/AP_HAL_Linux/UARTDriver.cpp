@@ -79,9 +79,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (!_connected) {
         _connected = _device->open();
-        if (_connected) {
-            _device->set_blocking(false);
-        }
+        _device->set_blocking(false);
     }
     _initialised = false;
 
@@ -293,15 +291,6 @@ int16_t UARTDriver::read()
     return byte;
 }
 
-bool UARTDriver::discard_input()
-{
-    if (!_initialised) {
-        return false;
-    }
-    _readbuf.clear();
-    return true;
-}
-
 /* Linux implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
@@ -339,12 +328,12 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
             ret++;
         }
+        _write_mutex.give();
         return ret;
     }
 
@@ -466,10 +455,6 @@ void UARTDriver::_timer_tick(void)
     }
 
     _in_timer = false;
-}
-
-void UARTDriver::configure_parity(uint8_t v) {
-    _device->set_parity(v);
 }
 
 /*

@@ -15,19 +15,27 @@
 
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
+#include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
+class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend
 {
 
 public:
+    // constructor
+    AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
+                        AP_SerialManager &serial_manager,
+                        uint8_t serial_instance);
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    // static detection function
+    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
+
+    // update state
+    void update(void) override;
 
 protected:
 
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_ULTRASOUND;
     }
 
@@ -41,9 +49,7 @@ private:
     };
 
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
-
-    uint16_t read_timeout_ms() const override { return 3000; }
+    bool get_reading(uint16_t &reading_cm);
 
     // add a single character to the buffer and attempt to decode
     // returns true if a complete sentence was successfully decoded
@@ -54,11 +60,16 @@ private:
     // returns true if new sentence has just passed checksum test and is validated
     bool decode_latest_term();
 
+    // return the numeric value of an ascii hex character
+    static int16_t char_to_hex(char a);
+
+    AP_HAL::UARTDriver *uart = nullptr;     // pointer to serial uart
+
     // message decoding related members
     char _term[15];                         // buffer for the current term within the current sentence
     uint8_t _term_offset;                   // offset within the _term buffer where the next character should be placed
     uint8_t _term_number;                   // term index within the current sentence
-    float _distance_m = -1.0f;                      // distance in meters parsed from a term, -1 if no distance
+    float _distance_m;                      // distance in meters parsed from a term, -1 if no distance
     uint8_t _checksum;                      // checksum accumulator
     bool _term_is_checksum;                 // current term is the checksum
     sentence_types _sentence_type;          // the sentence type currently being processed

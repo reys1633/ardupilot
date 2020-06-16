@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -34,13 +34,9 @@
 #define CH_STORAGE_LINE_SIZE (1<<CH_STORAGE_LINE_SHIFT)
 #define CH_STORAGE_NUM_LINES (CH_STORAGE_SIZE/CH_STORAGE_LINE_SIZE)
 
-static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
-              "Storage is not multiple of line size");
-
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
-    bool erase() override;
     void read_block(void *dst, uint16_t src, size_t n) override;
     void write_block(uint16_t dst, const void* src, size_t n) override;
 
@@ -48,21 +44,13 @@ public:
     bool healthy(void) override;
 
 private:
-    enum class StorageBackend: uint8_t {
-        None,
-        FRAM,
-        Flash,
-        SDCard,
-    };
-    StorageBackend _initialisedType = StorageBackend::None;
+    volatile bool _initialised;
     void _storage_create(void);
     void _storage_open(void);
     void _save_backup(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[CH_STORAGE_SIZE] __attribute__((aligned(4)));
-    Bitmask<CH_STORAGE_NUM_LINES> _dirty_mask;
-    HAL_Semaphore sem;
-    uint8_t tmpline[CH_STORAGE_LINE_SIZE];
+    Bitmask _dirty_mask{CH_STORAGE_NUM_LINES};
 
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
@@ -81,14 +69,16 @@ private:
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
 #endif
-
+    
     void _flash_load(void);
-    bool _flash_write(uint16_t line);
+    void _flash_write(uint16_t line);
 
 #if HAL_WITH_RAMTRON
     AP_RAMTRON fram;
+    bool using_fram;
 #endif
 #ifdef USE_POSIX
+    bool using_filesystem;
     int log_fd;
 #endif
 };

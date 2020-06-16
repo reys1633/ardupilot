@@ -4,9 +4,7 @@
 from __future__ import print_function
 
 import os.path
-import os
 import sys
-import subprocess
 sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
@@ -65,9 +63,9 @@ def options(opt):
     g = opt.ap_groups['configure']
 
     boards_names = boards.get_boards_names()
-    removed_names = boards.get_removed_boards()
     g.add_option('--board',
         action='store',
+        choices=boards_names,
         default=None,
         help='Target board to build, choices are %s.' % ', '.join(boards_names))
 
@@ -75,16 +73,6 @@ def options(opt):
         action='store_true',
         default=False,
         help='Configure as debug variant.')
-
-    g.add_option('--Werror',
-        action='store_true',
-        default=False,
-        help='build with -Werror.')
-    
-    g.add_option('--toolchain',
-        action='store',
-        default=None,
-        help='Override default toolchain used for the board. Use "native" for using the host toolchain.')
 
     g.add_option('--disable-gccdeps',
         action='store_true',
@@ -95,6 +83,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable OS level asserts.')
+
+    g.add_option('--use-nuttx-iofw',
+        action='store_true',
+        default=False,
+        help='use old NuttX IO firmware for IOMCU')
 
     g.add_option('--bootloader',
         action='store_true',
@@ -131,9 +124,9 @@ submodules at specific revisions.
                  default=False,
                  help="Enable checking of math indexes")
 
-    g.add_option('--disable-scripting', action='store_true',
+    g.add_option('--enable-scripting', action='store_true',
                  default=False,
-                 help="Disable onboard scripting engine")
+                 help="Enable onboard scripting engine")
 
     g.add_option('--scripting-checks', action='store_true',
                  default=True,
@@ -184,37 +177,6 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SFML graphics library")
 
-    g.add_option('--enable-sfml-audio', action='store_true',
-                 default=False,
-                 help="Enable SFML audio library")
-
-    g.add_option('--sitl-osd', action='store_true',
-                 default=False,
-                 help="Enable SITL OSD")
-
-    g.add_option('--sitl-rgbled', action='store_true',
-                 default=False,
-                 help="Enable SITL RGBLed")
-
-    g.add_option('--build-dates', action='store_true',
-                 default=False,
-                 help="Include build date in binaries.  Appears in AUTOPILOT_VERSION.os_sw_version")
-
-    g.add_option('--sitl-flash-storage',
-        action='store_true',
-        default=False,
-        help='Configure for building SITL with flash storage emulation.')
-
-    g.add_option('--disable-ekf2',
-        action='store_true',
-        default=False,
-        help='Configure without EKF2.')
-
-    g.add_option('--disable-ekf3',
-        action='store_true',
-        default=False,
-        help='Configure without EKF3.')
-    
     g.add_option('--static',
         action='store_true',
         default=False,
@@ -239,19 +201,10 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
-	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
 
-    boards_names = boards.get_boards_names()
-    if not cfg.options.board in boards_names:
-        for b in boards_names:
-            if b.upper() == cfg.options.board.upper():
-                cfg.options.board = b
-                break
-        
     cfg.env.BOARD = cfg.options.board
-    cfg.env.DEBUG = cfg.options.debug
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
     _set_build_context_variant(cfg.env.BOARD)
@@ -261,6 +214,7 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
+    cfg.env.USE_NUTTX_IOFW = cfg.options.use_nuttx_iofw
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
@@ -314,11 +268,10 @@ def configure(cfg):
         cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Scripting')
-    if cfg.options.disable_scripting:
-        cfg.end_msg('disabled', color='YELLOW')
-    else:
+    if cfg.options.enable_scripting:
         cfg.end_msg('enabled')
-        cfg.recurse('libraries/AP_Scripting')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -411,7 +364,7 @@ def _build_dynamic_sources(bld):
     if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
             features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
@@ -485,13 +438,6 @@ def _build_recursion(bld):
     if bld.env.IOMCU_FW is not None:
         if bld.env.IOMCU_FW:
             dirs_to_recurse.append('libraries/AP_IOMCU/iofirmware')
-
-    if bld.env.PERIPH_FW is not None:
-        if bld.env.PERIPH_FW:
-            dirs_to_recurse.append('Tools/AP_Periph')
-
-    dirs_to_recurse.append('libraries/AP_Scripting')
-
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
             bld,
@@ -567,7 +513,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware','AP_Periph'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

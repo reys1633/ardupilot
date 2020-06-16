@@ -8,8 +8,10 @@
 // functionality - for example, not doing anything while landed.
 class AP_Avoidance_Copter : public AP_Avoidance {
 public:
-
-    using AP_Avoidance::AP_Avoidance;
+    AP_Avoidance_Copter(AP_AHRS &ahrs, class AP_ADSB &adsb)
+        : AP_Avoidance(ahrs, adsb)
+    {
+    }
 
     /* Do not allow copies */
     AP_Avoidance_Copter(const AP_Avoidance_Copter &other) = delete;
@@ -17,7 +19,7 @@ public:
 
 private:
     // helper function to set modes and always succeed
-    void set_mode_else_try_RTL_else_LAND(Mode::Number mode);
+    void set_mode_else_try_RTL_else_LAND(control_mode_t mode);
 
 protected:
     // override avoidance handler
@@ -39,5 +41,5 @@ protected:
     bool handle_avoidance_perpendicular(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
 
     // control mode before avoidance began
-    Mode::Number prev_control_mode = Mode::Number::RTL;
+    control_mode_t prev_control_mode = RTL;
 };

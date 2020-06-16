@@ -17,7 +17,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include "iofirmware.h"
 
@@ -158,7 +157,7 @@ void AP_IOMCU_FW::run_mixer(void)
         case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16:
             pwm = rc_input.pwm[(uint8_t)(function - SRV_Channel::k_rcin1)];
             break;
-
+            
         case SRV_Channel::k_aileron:
         case SRV_Channel::k_aileron_with_input:
         case SRV_Channel::k_flaperon_left:
@@ -213,7 +212,7 @@ void AP_IOMCU_FW::run_mixer(void)
         case SRV_Channel::k_vtail_right:
             pwm = mix_output_angle(i, mix_elevon_vtail(rudder, pitch, true));
             break;
-
+            
         default:
             break;
         }

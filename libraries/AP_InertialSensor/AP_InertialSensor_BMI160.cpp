@@ -152,7 +152,9 @@ void AP_InertialSensor_BMI160::start()
 {
     bool r;
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return;
+    }
 
     r = _configure_accel();
     if (!r) {
@@ -426,7 +428,9 @@ bool AP_InertialSensor_BMI160::_hardware_init()
 
     hal.scheduler->delay(BMI160_POWERUP_DELAY_MSEC);
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        return false;
+    }
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 

@@ -2,7 +2,6 @@
 
 #include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RingBuffer.h>
 
 #include "GPIO.h"
 
@@ -12,10 +11,10 @@ class DigitalSource_Sysfs : public AP_HAL::DigitalSource {
     friend class GPIO_Sysfs;
 public:
     ~DigitalSource_Sysfs();
-    uint8_t read() override;
-    void write(uint8_t value) override;
-    void mode(uint8_t output) override;
-    void toggle() override;
+    uint8_t read();
+    void write(uint8_t value);
+    void mode(uint8_t output);
+    void toggle();
 private:
     /* Only GPIO_Sysfs will be able to instantiate */
     DigitalSource_Sysfs(unsigned pin, int value_fd);
@@ -37,7 +36,7 @@ public:
         return static_cast<GPIO_Sysfs*>(gpio);
     }
 
-    void init() override;
+    void init();
 
     void pinMode(uint8_t vpin, uint8_t output) override;
     uint8_t read(uint8_t vpin) override;
@@ -68,31 +67,6 @@ protected:
      * Note: the pin is ignored if already exported.
      */
     static bool _export_pin(uint8_t vpin);
-
-#ifdef HAL_GPIO_SCRIPT
-    /*
-      support for calling external scripts based on GPIO writes
-     */
-    void _gpio_script_write(uint8_t vpin, uint8_t value);
-
-    /*
-      thread to run scripts
-     */
-    void _gpio_script_thread(void);
-
-    /*
-      control structures for _gpio_script_write
-     */
-    typedef struct {
-        uint8_t pin;
-        uint8_t value;
-    } pin_value_t;
-
-    struct {
-        bool thread_created;
-        ObjectBuffer<pin_value_t> pending{10};
-    } _script;
-#endif // HAL_GPIO_SCRIPT
 };
 
 }

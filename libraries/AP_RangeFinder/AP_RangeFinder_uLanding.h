@@ -1,14 +1,22 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
+#include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend_Serial
+class AP_RangeFinder_uLanding : public AP_RangeFinder_Backend
 {
 
 public:
+    // constructor
+	AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
+                            AP_SerialManager &serial_manager,
+                            uint8_t serial_instance);
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    // static detection function
+    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
+
+    // update state
+    void update(void) override;
 
 protected:
 
@@ -16,21 +24,14 @@ protected:
         return MAV_DISTANCE_SENSOR_RADAR;
     }
 
-    // baudrate used during object construction:
-    uint32_t initial_baudrate(uint8_t serial_instance) const override {
-        return 115200;
-    }
-
-    uint16_t rx_bufsize() const override { return 128; }
-    uint16_t tx_bufsize() const override { return 128; }
-
 private:
     // detect uLanding Firmware Version
     bool detect_version(void);
 
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(uint16_t &reading_cm);
 
+    AP_HAL::UARTDriver *uart;
     uint8_t  _linebuf[6];
     uint8_t  _linebuf_len;
     bool     _version_known;

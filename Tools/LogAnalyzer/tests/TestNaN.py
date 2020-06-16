@@ -16,8 +16,7 @@ class TestNaN(Test):
             self.result.status = TestResult.StatusType.FAIL
 
         nans_ok = {
-            "CTUN": [ "DSAlt", "TAlt" ],
-            "POS": [ "RelOriginAlt"],
+            "CTUN": [ "DSAlt" ],
         }
 
         for channel in logdata.channels.keys():

@@ -15,18 +15,27 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RangeFinder.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
+#include <AP_RangeFinder/RangeFinder_Backend.h>
+
+extern const AP_HAL::HAL& hal;
+
+AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
+                                   AP_Proximity::Proximity_State &_state) :
+    AP_Proximity_Backend(_frontend, _state),
+    _distance_upward(-1)
+{
+}
 
 // update the state of the sensor
 void AP_Proximity_RangeFinder::update(void)
 {
     // exit immediately if no rangefinder object
-    const RangeFinder *rngfnd = AP::rangefinder();
+    const RangeFinder *rngfnd = frontend.get_rangefinder();
     if (rngfnd == nullptr) {
-        set_status(AP_Proximity::Status::NoData);
+        set_status(AP_Proximity::Proximity_NoData);
         return;
     }
 
@@ -43,12 +52,12 @@ void AP_Proximity_RangeFinder::update(void)
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 uint8_t sector = (uint8_t)sensor->orientation();
                 _angle[sector] = sector * 45;
-                _distance[sector] = sensor->distance_cm() * 0.01f;
-                _distance_min = sensor->min_distance_cm() * 0.01f;
-                _distance_max = sensor->max_distance_cm() * 0.01f;
+                _distance[sector] = sensor->distance_cm() / 100.0f;
+                _distance_min = sensor->min_distance_cm() / 100.0f;
+                _distance_max = sensor->max_distance_cm() / 100.0f;
                 _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
                 _last_update_ms = now;
-                update_boundary_for_sector(sector, true);
+                update_boundary_for_sector(sector);
             }
             // check upward facing range finder
             if (sensor->orientation() == ROTATION_PITCH_90) {
@@ -56,7 +65,7 @@ void AP_Proximity_RangeFinder::update(void)
                 int16_t up_distance_min = sensor->min_distance_cm();
                 int16_t up_distance_max = sensor->max_distance_cm();
                 if ((distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
-                    _distance_upward = distance_upward * 0.01f;
+                    _distance_upward = distance_upward * 1e2;
                 } else {
                     _distance_upward = -1.0; // mark an valid reading
                 }
@@ -67,9 +76,9 @@ void AP_Proximity_RangeFinder::update(void)
 
     // check for timeout and set health status
     if ((_last_update_ms == 0) || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
-        set_status(AP_Proximity::Status::NoData);
+        set_status(AP_Proximity::Proximity_NoData);
     } else {
-        set_status(AP_Proximity::Status::Good);
+        set_status(AP_Proximity::Proximity_Good);
     }
 }
 

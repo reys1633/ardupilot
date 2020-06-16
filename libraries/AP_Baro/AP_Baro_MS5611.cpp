@@ -18,7 +18,6 @@
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -82,7 +81,9 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    _dev->get_semaphore()->take_blocking();
+    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
+    }
 
     // high retries for init
     _dev->set_retries(10);
@@ -149,6 +150,34 @@ bool AP_Baro_MS56XX::_init()
     return true;
 }
 
+/**
+ * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
+ */
+static uint16_t crc4(uint16_t *data)
+{
+    uint16_t n_rem = 0;
+    uint8_t n_bit;
+
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
+        } else {
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    return (n_rem >> 12) & 0xF;
+}
+
 uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
 {
     const uint8_t reg = CMD_MS56XX_PROM + (word << 1);
@@ -195,7 +224,7 @@ bool AP_Baro_MS56XX::_read_prom_5611(uint16_t prom[8])
     /* remove CRC byte */
     prom[7] &= 0xff00;
 
-    return crc_read == crc_crc4(prom);
+    return crc_read == crc4(prom);
 }
 
 bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
@@ -228,7 +257,7 @@ bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
     /* remove CRC byte */
     prom[0] &= ~0xf000;
 
-    return crc_read == crc_crc4(prom);
+    return crc_read == crc4(prom);
 }
 
 /*
@@ -262,10 +291,9 @@ void AP_Baro_MS56XX::_timer(void)
     }
 
     /* if we had a failed read we are all done */
-    if (adc_val == 0 || adc_val == 0xFFFFFF) {
+    if (adc_val == 0) {
         // a failed read can mean the next returned value will be
-        // corrupt, we must discard it. This copes with MISO being
-        // pulled either high or low
+        // corrupt, we must discard it
         _discard_next = true;
         return;
     }

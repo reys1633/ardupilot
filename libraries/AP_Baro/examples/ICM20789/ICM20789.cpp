@@ -184,7 +184,6 @@ static void spi_init()
 }
 #endif
 
-#ifdef HAL_INS_MPU60x0_NAME
 /*
   send a 16 bit command to the baro
  */
@@ -218,10 +217,13 @@ static bool read_calibration_data(void)
     return true;
 }
 
+#ifdef HAL_INS_MPU60x0_NAME
 // initialise baro on i2c
 static void i2c_init(void)
 {
-    i2c_dev->get_semaphore()->take_blocking();
+    if (!i2c_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("Failed to get baro semaphore");
+    }
 
     if (send_cmd16(CMD_READ_ID)) {
         printf("ICM20789: read ID ******\n");
@@ -247,7 +249,9 @@ static void i2c_init(void)
     i2c_dev->get_semaphore()->give();
 
     printf("checking baro\n");
-    dev->get_semaphore()->take_blocking();
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("Failed to get device semaphore");
+    }
 
     uint8_t regs[3] = { 0xC0, 0xC1, 0xC2 };
     for (uint8_t i=0; i<ARRAY_SIZE(regs); i++) {
@@ -270,7 +274,10 @@ void setup()
 #ifdef HAL_INS_MPU60x0_NAME
     spi_dev = std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME));
 
-    spi_dev->get_semaphore()->take_blocking();
+    if (!spi_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("Failed to get spi semaphore");
+    }
+
 
     i2c_dev = std::move(hal.i2c_mgr->get_device(1, 0x63));
     dev = std::move(hal.i2c_mgr->get_device(1, 0x29));

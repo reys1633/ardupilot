@@ -1,17 +1,16 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
-#include "AP_RangeFinder_Params.h"
+#include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
 class AP_RangeFinder_analog : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
+    AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state);
 
     // static detection function
-    static bool detect(AP_RangeFinder_Params &_params);
+    static bool detect(RangeFinder::RangeFinder_State &_state);
 
     // update state
     void update(void) override;

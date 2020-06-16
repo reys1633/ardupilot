@@ -7,7 +7,7 @@
 
 #include "AnalogIn_Navio2.h"
 
-extern const AP_HAL::HAL& hal;
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 #define ADC_BASE_PATH "/sys/kernel/rcio/adc"
 

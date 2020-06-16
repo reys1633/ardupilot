@@ -83,11 +83,10 @@ bool AP_Compass_LSM9DS1::init()
 {
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
 
-    if (!bus_sem) {
+    if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.console->printf("LSM9DS1: Unable to get bus semaphore\n");
         return false;
     }
-    bus_sem->take_blocking();
 
     if (!_check_id()) {
         hal.console->printf("LSM9DS1: Could not check id\n");
@@ -104,15 +103,12 @@ bool AP_Compass_LSM9DS1::init()
         goto errout;
     }
 
-    //register compass instance
-    _dev->set_device_type(DEVTYPE_LSM9DS1);
-    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
-        goto errout;
-    }
-    set_dev_id(_compass_instance, _dev->get_bus_id());
+    _compass_instance = register_compass();
 
     set_rotation(_compass_instance, _rotation);
 
+    _dev->set_device_type(DEVTYPE_LSM9DS1);
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM9DS1::_update, void));
 

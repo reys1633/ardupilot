@@ -1,0 +1,12 @@
+double const omega0    = 3.0;   // 4.5
+double const zeta      = 0.8;
+double const iyy       = 0.0254; 
+double const xAcs      = 0.0076; //  0.3 * IN2M
+double const xCg       = 0.2032; // 16/2 * IN2M
+double const tankF0    = 4.65; //18.6;
+double const tankSlope = 1.5;  //-6.12;
+double const deadZone  = 0.5;
+double const maxACS    = 4.65; //10.0;
+double const tofmax    = 10.0;
+double const tmax      = 15.0;
+double const freq      = 50.0; // low pass filter

@@ -100,10 +100,9 @@ bool AP_Baro_FBM320::read_calibration(void)
 
 bool AP_Baro_FBM320::init()
 {
-    if (!dev) {
+    if (!dev || !dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-    dev->get_semaphore()->take_blocking();
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 

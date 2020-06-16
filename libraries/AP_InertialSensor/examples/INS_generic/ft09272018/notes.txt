@@ -1,0 +1,54 @@
+acsAP from 07222019logonly
+
+turned on open loop mode in acsap.cpp
+tofmax 3->10
+
+toneqty 64
+openloop test pattern starting at
+long period 0.75 short 0.25
+ports to the left, #2 to the right (yaw?)
+Plan: power/charge, after tone, pitch movement
+
+open loop Mavlink: 
+0.25-0.498 16 (SRM)
+1.0-1.098   1
+2.0-2.098   2
+2.5-2.748  32
+3.0-3.098   4
+4.0-4.098   8
+
+2   3(nothing)   4   1
+
+#3 valve worked some this morning (9/24) but then stopped responding at all.
+plan:
+move valve/tank assy out enough to confirm which wire goes to #3.
+Driver FET should be open circuit? disconnect?
+Apply 120 psi and 50VDC from power supply to check valve function
+
+
+Bench Test Software (masonLog0919)
+    missileRRT.h
+double const tmax      = 15.0; //2.5;   // time to stop execution loop
+double const tofmax    = 10.0; //3.0; // 3.0;
+double const gThreshold= -9.8*2; ???
+double const gThreshold= 9.8*2; \\-9.8*2;
+
+    acsAP.cpp
+bool openloop = true;  => false
+
+    INS_generic.cpp
+define LOW_PASS_FREQ   0 // Hz
+
+Flight Test Software
+
+Sequence
+Pressurize
+Charge Switch
+    SW STart
+    Charge Delay
+    Tone
+Launch Button
+    Detect Accel
+    term - tofMax
+    Parachute
+

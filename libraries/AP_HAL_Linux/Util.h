@@ -16,7 +16,6 @@ namespace Linux {
 enum hw_type {
     UTIL_HARDWARE_RPI1 = 0,
     UTIL_HARDWARE_RPI2,
-    UTIL_HARDWARE_RPI4,
     UTIL_HARDWARE_BEBOP,
     UTIL_HARDWARE_BEBOP2,
     UTIL_HARDWARE_DISCO,
@@ -30,12 +29,12 @@ public:
     }
 
     void init(int argc, char *const *argv);
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
 
     /**
        return commandline arguments, if available
      */
-    void commandline_arguments(uint8_t &argc, char * const *&argv) override;
+    void commandline_arguments(uint8_t &argc, char * const *&argv);
 
     /*
       set system clock in UTC microseconds
@@ -59,12 +58,6 @@ public:
 
     bool get_system_id(char buf[40]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
-
-#ifdef ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *h, void *ptr, size_t new_size) override;
-#endif // ENABLE_HEAP
     
     /*
      * Write a string as specified by @fmt to the file in @path. Note this
@@ -82,22 +75,22 @@ public:
 
     perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
     {
-        return Perf::get_singleton()->add(t, name);
+        return Perf::get_instance()->add(t, name);
     }
 
     void perf_begin(perf_counter_t perf) override
     {
-        return Perf::get_singleton()->begin(perf);
+        return Perf::get_instance()->begin(perf);
     }
 
     void perf_end(perf_counter_t perf) override
     {
-        return Perf::get_singleton()->end(perf);
+        return Perf::get_instance()->end(perf);
     }
 
     void perf_count(perf_counter_t perf) override
     {
-        return Perf::get_singleton()->count(perf);
+        return Perf::get_instance()->count(perf);
     }
 
     int get_hw_arm32();
@@ -120,18 +113,6 @@ private:
     const char *custom_terrain_directory = nullptr;
     const char *custom_storage_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
-
-#ifdef ENABLE_HEAP
-    struct heap_allocation_header {
-        size_t allocation_size; // size of allocated block, not including this header
-    };
-
-    struct heap {
-      size_t max_heap_size;
-      size_t current_heap_usage;
-    };
-#endif // ENABLE_HEAP
-
 };
 
 }

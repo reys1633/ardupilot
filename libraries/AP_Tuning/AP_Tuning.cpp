@@ -1,5 +1,4 @@
 #include "AP_Tuning.h"
-#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -66,10 +65,6 @@ void AP_Tuning::check_selector_switch(void)
         // no selector switch enabled
         return;
     }
-    if (!rc().has_valid_input()) {
-        selector_start_ms = 0;
-        return;
-    }
     RC_Channel *selchan = rc().channel(selector-1);
     if (selchan == nullptr) {
         return;
@@ -94,9 +89,7 @@ void AP_Tuning::check_selector_switch(void)
         // low selector
         if (selector_start_ms != 0) {
             uint32_t hold_time = AP_HAL::millis() - selector_start_ms;
-            if (hold_time < 200) {
-                // debounce!
-            } else if (hold_time < 2000) {
+            if (hold_time < 2000) {
                 // re-center the value
                 re_center();
                 gcs().send_text(MAV_SEVERITY_INFO, "Tuning: recentered %s", get_tuning_name(current_parm));
@@ -104,8 +97,8 @@ void AP_Tuning::check_selector_switch(void)
                 // change parameter
                 next_parameter();
             }
-            selector_start_ms = 0;
         }
+        selector_start_ms = 0;
     }
 }
 
@@ -233,14 +226,7 @@ void AP_Tuning::check_input(uint8_t flightmode)
  */
 void AP_Tuning::Log_Write_Parameter_Tuning(float value)
 {
-// @LoggerMessage: PRTN
-// @Description: Plane Parameter Tuning data
-// @Field: TimeUS: Time since system startup
-// @Field: Set: Parameter set being tuned
-// @Field: Parm: Parameter being tuned
-// @Field: Value: Current parameter value
-// @Field: CenterValue: Center value (startpoint of current modifications) of parameter being tuned
-    AP::logger().Write("PRTN", "TimeUS,Set,Parm,Value,CenterValue", "QBBff",
+    DataFlash_Class::instance()->Log_Write("PTUN", "TimeUS,Set,Parm,Value,CenterValue", "QBBff",
                                            AP_HAL::micros64(),
                                            parmset,
                                            current_parm,

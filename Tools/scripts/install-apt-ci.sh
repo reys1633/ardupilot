@@ -13,6 +13,8 @@ PKGS=" \
     python-pip \
     python-dev \
     zlib1g-dev \
+    gcc-4.9 \
+    g++-4.9 \
     cmake3 \
     cmake3-data \
     "

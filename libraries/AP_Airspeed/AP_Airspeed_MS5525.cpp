@@ -26,7 +26,6 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -71,7 +70,9 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        dev->get_semaphore()->take_blocking();
+        if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+            continue;
+        }
 
         // lots of retries during probe
         dev->set_retries(5);
@@ -112,7 +113,27 @@ bool AP_Airspeed_MS5525::init()
  */
 uint16_t AP_Airspeed_MS5525::crc4_prom(void)
 {
-    return crc_crc4(prom);
+    uint16_t n_rem = 0;
+    uint8_t n_bit;
+
+    for (uint8_t cnt = 0; cnt < sizeof(prom); cnt++) {
+        /* uneven bytes */
+        if (cnt & 1) {
+            n_rem ^= (uint8_t)((prom[cnt >> 1]) & 0x00FF);
+        } else {
+            n_rem ^= (uint8_t)(prom[cnt >> 1] >> 8);
+        }
+
+        for (n_bit = 8; n_bit > 0; n_bit--) {
+            if (n_rem & 0x8000) {
+                n_rem = (n_rem << 1) ^ 0x3000;
+            } else {
+                n_rem = (n_rem << 1);
+            }
+        }
+    }
+
+    return (n_rem >> 12) & 0xF;
 }
 
 bool AP_Airspeed_MS5525::read_prom(void)
@@ -262,11 +283,11 @@ void AP_Airspeed_MS5525::timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
 {
-    WITH_SEMAPHORE(sem);
-
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
+
+    WITH_SEMAPHORE(sem);
 
     if (press_count > 0) {
         pressure = pressure_sum / press_count;
@@ -281,11 +302,11 @@ bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_MS5525::get_temperature(float &_temperature)
 {
-    WITH_SEMAPHORE(sem);
-
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
+
+    WITH_SEMAPHORE(sem);
 
     if (temp_count > 0) {
         temperature = temperature_sum / temp_count;

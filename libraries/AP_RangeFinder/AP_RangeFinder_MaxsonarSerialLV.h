@@ -1,14 +1,22 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
+#include "RangeFinder.h"
+#include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
+class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend
 {
 
 public:
+    // constructor
+    AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state,
+                                   AP_SerialManager &serial_manager,
+                                   uint8_t serial_instance);
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    // static detection function
+    static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
+
+    // update state
+    void update(void) override;
 
 protected:
 
@@ -18,10 +26,9 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(uint16_t &reading_cm);
 
-    uint16_t read_timeout_ms() const override { return 500; }
-
+    AP_HAL::UARTDriver *uart = nullptr;
     char linebuf[10];
     uint8_t linebuf_len = 0;
 };

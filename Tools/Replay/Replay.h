@@ -23,10 +23,11 @@
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>
+#include <AP_Buffer/AP_Buffer.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Logger/AP_Logger.h>
+#include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -49,37 +50,27 @@
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
-class ReplayVehicle : public AP_Vehicle {
+class ReplayVehicle {
 public:
-    friend class Replay;
-
     ReplayVehicle() { unused = -1; }
-    // HAL::Callbacks implementation.
-    void load_parameters(void) override;
-    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
-                             uint8_t &task_count,
-                             uint32_t &log_bit) override { };
-
-    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
-    virtual uint8_t get_mode() const override { return 0; }
+    void setup();
+    void load_parameters(void);
 
     AP_InertialSensor ins;
     AP_Baro barometer;
     AP_GPS gps;
     Compass compass;
     AP_SerialManager serial_manager;
-    RangeFinder rng;
-    AP_AHRS_NavEKF ahrs;
+    RangeFinder rng{serial_manager, ROTATION_PITCH_270};
+    NavEKF2 EKF2{&ahrs, rng};
+    NavEKF3 EKF3{&ahrs, rng};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
-    AP_Logger logger{unused};
-
-protected:
-
-    void init_ardupilot() override;
+    DataFlash_Class dataflash{unused};
 
 private:
     Parameters g;
@@ -101,7 +92,7 @@ public:
     void setup() override;
     void loop() override;
 
-    void flush_logger(void);
+    void flush_dataflash(void);
     void show_packet_counts();
 
     bool check_solution = false;
@@ -134,7 +125,7 @@ private:
             _vehicle.compass,
             _vehicle.gps,
             _vehicle.airspeed,
-            _vehicle.logger,
+            _vehicle.dataflash,
             _vehicle.log_structure,
             0,
             nottypes};

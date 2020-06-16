@@ -27,7 +27,7 @@
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
-#include <AP_Logger/AP_Logger.h>
+#include <DataFlash/DataFlash.h>
 
 #include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
 
@@ -94,7 +94,9 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 */
 bool AP_Baro_ICM20789::imu_spi_init(void)
 {
-    dev_imu->get_semaphore()->take_blocking();
+    if (!dev_imu->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");
+    }
 
     dev_imu->set_read_flag(0x80);
 
@@ -170,7 +172,9 @@ bool AP_Baro_ICM20789::init()
 
     debug("Looking for 20789 baro\n");
 
-    dev->get_semaphore()->take_blocking();
+    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
+    }
 
     debug("Setting up IMU\n");
     if (dev_imu->bus_type() != AP_HAL::Device::BUS_TYPE_I2C) {
@@ -292,7 +296,7 @@ static struct {
 void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
 {
     // temperature is easy
-    float T = -45 + (175.0f / (1U<<16)) * Traw;
+    float T = -45 + (175.0 / (1U<<16)) * Traw;
 
     // pressure involves a few more calculations
     float P = get_pressure(Praw, Traw);
@@ -339,14 +343,7 @@ void AP_Baro_ICM20789::update()
 {
 #if BARO_ICM20789_DEBUG
     // useful for debugging
-// @LoggerMessage: ICMB
-// @Description: ICM20789 diagnostics
-// @Field: TimeUS: Time since system startup
-// @Field: Traw: raw temperature from sensor
-// @Field: Praw: raw pressure from sensor
-// @Field: P: pressure
-// @Field: T: temperature
-    AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
+    DataFlash_Class::instance()->Log_Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                            AP_HAL::micros64(),
                                            dd.Traw, dd.Praw, dd.P, dd.T);
 #endif

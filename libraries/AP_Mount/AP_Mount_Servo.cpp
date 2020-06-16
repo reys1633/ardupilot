@@ -1,10 +1,9 @@
 #include "AP_Mount_Servo.h"
-#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
 // init - performs any required initialisation for this instance
-void AP_Mount_Servo::init()
+void AP_Mount_Servo::init(const AP_SerialManager& serial_manager)
 {
     if (_instance == 0) {
         _roll_idx = SRV_Channel::k_mount_roll;
@@ -70,20 +69,12 @@ void AP_Mount_Servo::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
         {
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, false)) {
+            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, false);
                 stabilize();
             }
             break;
         }
-
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
-                                           _flags.tilt_control,
-                                           _flags.pan_control,
-                                           false)) {
-                stabilize();
-            }
-            break;
 
         default:
             //do nothing

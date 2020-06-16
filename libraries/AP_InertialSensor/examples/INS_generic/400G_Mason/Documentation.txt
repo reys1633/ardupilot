@@ -1,0 +1,7 @@
+Research ChibiOS Drivers from 
+	http://chibios.sourceforge.net/docs3/hal/group___i2_c.html#ga1bd147f37bd45e003b06f17c0a9b4051
+
+Mimic Invensense _read_fifo with transfer()
+Mimic LSM9DS0/1 _read_data_transaction_a/x with transfer() - may be better option
+
+Error free, but still freezes after charging caps

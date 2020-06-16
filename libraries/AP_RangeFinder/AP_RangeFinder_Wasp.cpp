@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_RangeFinder_Wasp.h"
-
 #include <AP_HAL/AP_HAL.h>
+#include "AP_RangeFinder_Wasp.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -67,13 +67,25 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
 };
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                                         AP_RangeFinder_Params &_params,
+                                         AP_SerialManager &serial_manager,
                                          uint8_t serial_instance) :
-    AP_RangeFinder_Backend_Serial(_state, _params, serial_instance)
-{
+    AP_RangeFinder_Backend(_state) {
     AP_Param::setup_object_defaults(this, var_info);
 
-    state.var_info = var_info;
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
+    if (uart != nullptr) {
+        uart->begin(115200);
+
+        // register Wasp specific parameters
+        state.var_info = var_info;
+
+        configuration_state = WASP_CFG_PROTOCOL;
+    }
+}
+
+// detection is considered as locating a serial port
+bool AP_RangeFinder_Wasp::detect(AP_SerialManager &serial_manager, uint8_t serial_instance) {
+    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
 }
 
 // read - return last value measured by sensor
@@ -95,7 +107,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
             if (isalpha(linebuf[0])) {
                 parse_response();
             } else {
-                float read_value = strtof(linebuf, NULL);
+                float read_value = (float)atof(linebuf);
                 if (read_value > 0) {
                     sum += read_value;
                     count++;
@@ -120,7 +132,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
     }
 
     reading_cm = 100 * sum / count;
-    set_status(RangeFinder::Status::Good);
+    set_status(RangeFinder::RangeFinder_Good);
 
     return true;
 }
@@ -129,7 +141,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
 
 void AP_RangeFinder_Wasp::update(void) {
     if (!get_reading(state.distance_cm)) {
-        set_status(RangeFinder::Status::NoData);
+        set_status(RangeFinder::RangeFinder_NoData);
     }
 
     if (AP_HAL::millis() - state.last_reading_ms > 500) {

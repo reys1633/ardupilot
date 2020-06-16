@@ -20,6 +20,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 class AP_TempCalibration
@@ -66,7 +67,7 @@ private:
 
     const float exp_limit_max = 2;
     const float exp_limit_min = 0;
-    float learn_delta = 0.01f;
+    float learn_delta = 0.01;
     
     // require observation of at least 5 degrees of temp range to
     // start learning

@@ -90,9 +90,9 @@ void Sub::set_surfaced(bool at_surface)
     surface_detector_count = 0;
 
     if (ap.at_surface) {
-        AP::logger().Write_Event(LogEvent::SURFACED);
+        Log_Write_Event(DATA_SURFACED);
     } else {
-        AP::logger().Write_Event(LogEvent::NOT_SURFACED);
+        Log_Write_Event(DATA_NOT_SURFACED);
     }
 }
 
@@ -108,8 +108,8 @@ void Sub::set_bottomed(bool at_bottom)
     bottom_detector_count = 0;
 
     if (ap.at_bottom) {
-        AP::logger().Write_Event(LogEvent::BOTTOMED);
+        Log_Write_Event(DATA_BOTTOMED);
     } else {
-        AP::logger().Write_Event(LogEvent::NOT_BOTTOMED);
+        Log_Write_Event(DATA_NOT_BOTTOMED);
     }
 }

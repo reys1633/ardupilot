@@ -14,6 +14,7 @@ The [KakuteF4 AIO](http://www.holybro.com/product/47) is a flight controller pro
 ## Pinout
 
 ![KakuteF4 Top](kakutef4_top.jpg "KakuteF4Top")
+![KakuteF4 Bot](kakutef4_bot.jpg "KakuteF4Bot")
 
 ## UART Mapping
 
@@ -83,7 +84,7 @@ The KakuteF4 AIO does not have a builting compass, but you can attach an externa
 
 ## Logging
 
-The KakuteF4 supports on-board dataflash logging.
+The KakuteF4 does not support on-board logging at this time.
 
 ## Loading Firmware
 

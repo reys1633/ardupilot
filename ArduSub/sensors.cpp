@@ -4,11 +4,6 @@
 void Sub::read_barometer()
 {
     barometer.update();
-    // If we are reading a positive altitude, the sensor needs calibration
-    // Even a few meters above the water we should have no significant depth reading
-    if(!motors.armed() && barometer.get_altitude() > 0) {
-        barometer.update_calibration();
-    }
 
     if (ap.depth_sensor_present) {
         sensor_health.depth = barometer.healthy(depth_sensor_idx);
@@ -18,7 +13,7 @@ void Sub::read_barometer()
 void Sub::init_rangefinder()
 {
 #if RANGEFINDER_ENABLED == ENABLED
-    rangefinder.init(ROTATION_PITCH_270);
+    rangefinder.init();
     rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
     rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
@@ -30,7 +25,7 @@ void Sub::read_rangefinder()
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
-    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
+    rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
 
     int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
 
@@ -56,7 +51,6 @@ void Sub::read_rangefinder()
 
     // send rangefinder altitude and health to waypoint navigation library
     wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-    circle_nav.set_rangefinder_alt(rangefinder_state.enabled && wp_nav.rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
 
 #else
     rangefinder_state.enabled = false;
@@ -80,11 +74,38 @@ void Sub::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            logger.Write_RPM(rpm_sensor);
+            DataFlash.Log_Write_RPM(rpm_sensor);
         }
     }
 }
 #endif
+
+// initialise compass
+void Sub::init_compass()
+{
+    if (!compass.init() || !compass.read()) {
+        // make sure we don't pass a broken compass to DCM
+        hal.console->println("COMPASS INIT ERROR");
+        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
+        return;
+    }
+    ahrs.set_compass(&compass);
+}
+
+/*
+  initialise compass's location used for declination
+ */
+void Sub::init_compass_location()
+{
+    // update initial location used for declination
+    if (!ap.compass_init_location) {
+        Location loc;
+        if (ahrs.get_position(loc)) {
+            compass.set_initial_location(loc.lat, loc.lng);
+            ap.compass_init_location = true;
+        }
+    }
+}
 
 // initialise optical flow sensor
 #if OPTFLOW == ENABLED
@@ -94,6 +115,13 @@ void Sub::init_optflow()
     optflow.init(MASK_LOG_OPTFLOW);
 }
 #endif      // OPTFLOW == ENABLED
+
+void Sub::compass_cal_update()
+{
+    if (!hal.util->get_soft_armed()) {
+        compass.compass_cal_update();
+    }
+}
 
 void Sub::accel_cal_update()
 {

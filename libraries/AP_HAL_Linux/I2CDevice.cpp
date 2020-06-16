@@ -56,9 +56,9 @@
 #define I2C_RDRW_IOCTL_MAX_MSGS 42
 #endif
 
-extern const AP_HAL::HAL& hal;
-
 namespace Linux {
+
+static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 /*
  * TODO: move to Util or other upper class to be used by others
@@ -105,7 +105,7 @@ I2CBus::~I2CBus()
 
 void I2CBus::start_cb()
 {
-    sem.take_blocking();
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void I2CBus::end_cb()
