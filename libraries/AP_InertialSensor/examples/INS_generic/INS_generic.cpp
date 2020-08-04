@@ -8,6 +8,7 @@
  *
  * */
 #include <stdio.h>
+#include <fstream>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -29,6 +30,8 @@
 #define LOG_FILE_NAME "/APM/" "imudata" ".dat"
 #endif
 #endif
+
+//namespace fs = std::filesystem;
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -188,7 +191,22 @@ void xferToSD(void){
     // dump stored data to SD Card
     sdcard_init();
     float temp;
-    int fd = -1;
+    //int fd = -1;
+    std::string path;
+    int num = 1;
+    struct stat buf;
+    bool exists;
+    do {
+        path = "/APM/filestream_";
+        path += std::to_string(num);
+        path += ".csv";
+        num++;
+        exists = stat(path.c_str(), &buf) != -1;
+    } while(exists);
+    // strcat(path, buffer);
+    // strcat(path, ".csv");
+
+
     //fd = open( "/APM/v001.dat", O_WRONLY|O_CREAT );//09302019_0936
     //fd = open( "/APM/v002.dat", O_WRONLY|O_CREAT );//09302019_1026
     //fd = open( "/APM/v004.dat", O_WRONLY|O_CREAT );//09302019_1026
@@ -198,9 +216,38 @@ void xferToSD(void){
     //fd = open( "/APM/v008bt.dat", O_WRONLY|O_CREAT );//10042019_1130
     //fd = open( "/APM/v008ft.dat", O_WRONLY|O_CREAT );//10032019_1230 no one
     //fd = open( "/APM/v009bt.dat", O_WRONLY|O_CREAT );//10242019_1220 bench test
-      fd = open( "/APM/v010ft.dat", O_WRONLY|O_CREAT );//10242019_1240
+    //fd = open( path, O_WRONLY|O_CREAT|O_logRUNC );//10242019_1240
     //fd = open( "/APM/v011bt.dat", O_WRONLY|O_CREAT );//10252019_0850
+    
+    /*
+    comments in:
+    /opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/wchar.h
+        lines 73-79
+    /opt/gcc-arm-none-eabi-6-2017-q2-update/arm-none-eabi/include/c++/6.3.1/bits/basic_string.h
+        lines 5466-5530
+    */
 
+    std::ofstream fd;
+    fd.open(path);
+
+    fd << "time,gyrx,gyry,gyrz,rol,pit,yaw,accx,accy,accz,vCmds" << "\n";
+
+    uint8_t nThisLine = 0;
+    for( int k=0; k<memcnt; k++ ) { // memcnt
+        temp = stor[k];
+
+        fd << std::to_string(temp) << ",";
+        hal.console->printf("%8.3f ", temp );
+        if( nThisLine++ >= 5 )
+        {
+            fd << "\n";
+            hal.console->printf("\n");
+            nThisLine = 0;
+            hal.scheduler->delay(4);
+        }
+    }
+
+    /*
     uint8_t nThisLine = 0;
     for( int k=0; k<memcnt; k++ ) { // memcnt
         temp = stor[k];
@@ -214,10 +261,29 @@ void xferToSD(void){
         }
     }
     hal.console->printf("Closing log file\n");
-    close( fd );
+    close( fd );*/
+    hal.console->printf("Closing log file\n");
+    fd.close();
+    /*
     while( true ) { // do forever
         continue;
+    }*/
+}
+
+void print_file(std::string name) {
+
+    std::string path = "/APM/" + name;
+    std::ifstream fd;
+    fd.open(path);
+                
+    std::string line;
+    while(getline(fd, line)){  //read data from file object and put it into string.
+        line += "\n";
+        hal.console->printf(line.c_str());   //print the data of the string
+        hal.scheduler->delay(4);
     }
+
+    fd.close();
 }
 
 void loop(void) {
@@ -282,7 +348,7 @@ void loop(void) {
                 break;
             case PRE :
 //              if( accel[0] <= gThreshold || !FLTTEST) { //|| true
-                if( accel[0] <= gThreshold ) { //|| true
+                if( accel[0] <= gThreshold || time >= 2.8) { //|| true
                     tlau = time;
                     hal.console->printf(" launch detected at %f\n", tlau);
                     launched = true;
@@ -294,14 +360,15 @@ void loop(void) {
                 if( tof >= tofmax ) { // || time > tmax
                     mode = POST;
                     hal.console->printf(" post flight %f6.3\n", tof);
+                
+                    stopex = true;
+                    acs.shutdown();
+                    xferToSD();
+                    hal.scheduler->delay(1000);
                 }
                 break;
 
             case POST :
-                stopex = true;
-                acs.shutdown();
-                xferToSD();
-                hal.scheduler->delay(1000);
                 break;
         } // switch( mode )
 
@@ -337,6 +404,63 @@ void loop(void) {
                 break;
 
             case POST:
+
+                int user_input;
+
+                while (true) {
+                    // flush any user input
+                    while (hal.console->available()) {
+                        hal.console->read();
+                    }
+
+                    std::string files[50];
+
+                    hal.console->printf("\nAvailable Files:\n----------------\n");
+                    
+                    DIR *dir;
+                    struct dirent *ent;
+                    int num_files = 0;
+                    if ((dir = opendir ("/APM")) != NULL) {
+                        // print all .csv files within directory
+                        while ((ent = readdir (dir)) != NULL) {
+                            std::string name = ent->d_name;
+                            int len = name.length();
+
+                            if (len >= 4 && name.substr(name.length()-4) == ".csv") {
+                                files[num_files] = name;
+                                num_files++;
+                                hal.console->printf ("%u. %s\n\n", num_files, ent->d_name);
+                            }
+                        }
+                        closedir (dir);
+                    }
+
+                    hal.console->printf("Select number of file to print\n>");
+                                        
+                    // wait for user input
+                    while (!hal.console->available()) {
+                        hal.scheduler->delay(20);
+                    }
+
+                    // read in user input
+                    if (hal.console->available()) {
+                        user_input = (int) hal.console->read() - 48; // offset for ascii value
+
+                        if (0 < user_input && user_input <= num_files){
+                            print_file(files[user_input-1]);
+                        }
+                        else{
+                            hal.console->printf("Not a valid Input\n");
+                        }
+                    }
+
+                    // wait for user input
+                    while (!hal.console->available()) {
+                        hal.scheduler->delay(20);
+                    }
+                    
+
+                }
                 break;
         }  // switch case
 
@@ -346,6 +470,7 @@ void loop(void) {
         hal.console->printf("t%6.3f  tof%6.3f  q%7.3f  r%7.3f  p%7.3f  y%7.3f  gb1 %7.3f  gb2%7.3f cnt%6d  acc%6.2f\n",
             time, tof, gyrof[1], gyrof[2], rpy[1]*R2D, rpy[2]*R2D, gyrBia[1], gyrBia[2], outcnt, accel[0] );
     } // while( !stopex )
+
 }// end of "loop" method
 
 AP_HAL_MAIN();

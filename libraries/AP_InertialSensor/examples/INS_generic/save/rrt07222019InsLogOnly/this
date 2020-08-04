@@ -1,4 +1,0 @@
-rm ../acsAP.*
-cp INS_generic.cpp ..
-cp missileRRT.h ..
-
