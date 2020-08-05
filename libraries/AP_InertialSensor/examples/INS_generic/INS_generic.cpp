@@ -95,7 +95,7 @@ modes mode = CAL;
 //float_t stor[20000]; // 19500
 //uint maxrec = 13000+100;    // 1000*13
 float_t stor[28200]; // 1 sec @1khz record all raw INS data
-//float_t stor[32600]; // 1 sec @1khz record all raw INS data
+// float_t stor[32600]; // 1 sec @1khz record all raw INS data
 //float_t stor[29542]; // 1 sec @1khz record all raw INS data
 //double_t stor[28200];
 //  double gyr0[3];
@@ -184,6 +184,10 @@ void logToMem(void){
     stor[memcnt+4] = rpy[2] * R2D;
     stor[memcnt+5] = vCmd;
     memcnt += 6;
+
+    if (memcnt + 6 > sizeof(stor)/sizeof(stor[0])) {
+        mode = POST;
+    }
     //hal.console->printf("logToMem tof%f memcnt%d\n", tof, memcnt);
 }
 
@@ -197,15 +201,12 @@ void xferToSD(void){
     struct stat buf;
     bool exists;
     do {
-        path = "/APM/filestream_";
+        path = "/APM/imudata_";
         path += std::to_string(num);
         path += ".csv";
         num++;
         exists = stat(path.c_str(), &buf) != -1;
     } while(exists);
-    // strcat(path, buffer);
-    // strcat(path, ".csv");
-
 
     //fd = open( "/APM/v001.dat", O_WRONLY|O_CREAT );//09302019_0936
     //fd = open( "/APM/v002.dat", O_WRONLY|O_CREAT );//09302019_1026
@@ -348,7 +349,7 @@ void loop(void) {
                 break;
             case PRE :
 //              if( accel[0] <= gThreshold || !FLTTEST) { //|| true
-                if( accel[0] <= gThreshold || time >= 2.8) { //|| true
+                if( accel[0] <= gThreshold ) { //|| time >= 2.8) { //|| true
                     tlau = time;
                     hal.console->printf(" launch detected at %f\n", tlau);
                     launched = true;
@@ -360,16 +361,15 @@ void loop(void) {
                 if( tof >= tofmax ) { // || time > tmax
                     mode = POST;
                     hal.console->printf(" post flight %f6.3\n", tof);
-                
-                    stopex = true;
-                    acs.shutdown();
-                    xferToSD();
-                    hal.scheduler->delay(1000);
+                    continue;
                 }
                 break;
 
             case POST :
-                break;
+                stopex = true;
+                acs.shutdown();
+                xferToSD();
+                hal.scheduler->delay(1000);
         } // switch( mode )
 
         // execute control
