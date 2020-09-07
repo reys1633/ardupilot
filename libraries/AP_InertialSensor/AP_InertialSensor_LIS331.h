@@ -37,23 +37,25 @@
 #define INT2_THS         0x36
 #define INT2_DURATION    0x37
 
-class AP_InertialSensor_LIS331 : public AP_InertialSensor_Backend
+class AP_InertialSensor_LIS331 // : public AP_InertialSensor_Backend
 {
 public:
   // typedefs for this class
-  enum comm_mode {USE_I2C, USE_SPI} ;
-  enum power_mode {POWER_DOWN, NORMAL, LOW_POWER_0_5HZ, LOW_POWER_1HZ,
-                LOW_POWER_2HZ, LOW_POWER_5HZ, LOW_POWER_10HZ};
-  enum data_rate {DR_50HZ, DR_100HZ, DR_400HZ, DR_1000HZ};
-  enum high_pass_cutoff_freq_cfg {HPC_8, HPC_16, HPC_32, HPC_64};
-  enum pp_od {PUSH_PULL, OPEN_DRAIN};
-  enum int_sig_src {INT_SRC, INT1_2_SRC, DRDY, BOOT};
-  enum fs_range {LOW_RANGE, MED_RANGE, NO_RANGE, HIGH_RANGE};
-  enum int_axis {X_AXIS, Y_AXIS, Z_AXIS};
-  enum trig_on_level {TRIG_ON_HIGH, TRIG_ON_LOW};
+  typedef enum {USE_I2C, USE_SPI} comm_mode;
+  typedef enum {POWER_DOWN, NORMAL, LOW_POWER_0_5HZ, LOW_POWER_1HZ,
+                LOW_POWER_2HZ, LOW_POWER_5HZ, LOW_POWER_10HZ} power_mode;
+  typedef enum {DR_50HZ, DR_100HZ, DR_400HZ, DR_1000HZ} data_rate;
+  typedef enum {HPC_8, HPC_16, HPC_32, HPC_64} high_pass_cutoff_freq_cfg;
+  typedef enum {PUSH_PULL, OPEN_DRAIN} pp_od;
+  typedef enum {INT_SRC, INT1_2_SRC, DRDY, BOOT} int_sig_src;
+  typedef enum {LOW_RANGE, MED_RANGE, NO_RANGE, HIGH_RANGE} fs_range;
+  typedef enum {X_AXIS, Y_AXIS, Z_AXIS} int_axis;
+  typedef enum {TRIG_ON_HIGH, TRIG_ON_LOW} trig_on_level;
+
+  const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
   // public functions
-  //AP_InertialSensor_LIS331();   // Constructor. Defers all functionality to .begin()
+  AP_InertialSensor_LIS331();   // Constructor. Defers all functionality to .begin()
 
   void begin(comm_mode mode);
 
@@ -108,10 +110,10 @@ public:
 
   void read_data_transaction_a(int16_t &x, int16_t &y, int16_t &z);
 
-  //Added functionality
-  AP_InertialSensor_LIS331(AP_InertialSensor &imu,
-                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
-  virtual ~AP_InertialSensor_LIS331();
+  // //Added functionality
+  // AP_InertialSensor_LIS331(AP_InertialSensor &imu,
+  //                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+  // virtual ~AP_InertialSensor_LIS331();
 
   //probe the sensor on I2C bus
   //static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
@@ -124,6 +126,8 @@ public:
 private:
 
   comm_mode mode;    // comms mode, I2C or SPI
+
+  AP_HAL::I2CDevice *device;
 
   uint8_t address;   // I2C address
 

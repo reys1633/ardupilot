@@ -4,27 +4,22 @@
 #include <utility>
 #include <stdio.h>
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_InertialSensor_LIS331.h"
-
-extern const AP_HAL::HAL &hal;
 
 //static HAL_ChibiOS::I2CDevice i2c;
 
-Vector3f raw_accel_400g;
+// Vector3f raw_accel_400g;
 
 //constructor
+/*
 AP_InertialSensor_LIS331::AP_InertialSensor_LIS331(AP_InertialSensor &imu,
                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_InertialSensor_Backend(imu)
     , _dev(std::move(dev))
 {
 }
-
-AP_InertialSensor_LIS331::~AP_InertialSensor_LIS331()
-{
-}
+*/
+AP_InertialSensor_LIS331::AP_InertialSensor_LIS331(){}
 
 /*
 //Detect the Sensor
@@ -42,7 +37,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_LIS331::probe(AP_InertialSensor &im
 
     return sensor;
 }
-/*
+
 bool AP_InertialSensor_LIS331::_init_sensor(void) {
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
@@ -69,10 +64,10 @@ bool AP_InertialSensor_LIS331::_init_sensor(void) {
     hal.scheduler->delay(5);
 
     //Normal power, 800Hz
-*/
 
 
-/*
+
+
 AP_InertialSensor_LIS331::AP_InertialSensor_LIS331()
 {
 }
@@ -80,14 +75,18 @@ AP_InertialSensor_LIS331::AP_InertialSensor_LIS331()
 //Needs full rework with chibiOS integration
 void AP_InertialSensor_LIS331::begin(comm_mode mode)
 {
-    hal.console->printf("beginning\n");
-    this->mode = mode;
-    //this->mode = USE_I2C;
-    setPowerMode(NORMAL);
-    axesEnable(true);
-    uint8_t data = 0;
-    for (int i = 0x21; i < 0x25; i++) LIS331_write(i,&data,1);
-    for (int i = 0x30; i < 0x37; i++) LIS331_write(i,&data,1);
+  hal.console->printf("beginning\n");
+  
+  this->mode = mode;
+  this->mode = USE_I2C;
+
+  this->device = hal.i2c_mgr->get_device(1, 0x19).leak();
+
+  // setPowerMode(NORMAL);
+  // axesEnable(true);
+  // uint8_t data = 0;
+  // for (int i = 0x21; i < 0x25; i++) LIS331_write(i,&data,1);
+  // for (int i = 0x30; i < 0x37; i++) LIS331_write(i,&data,1);
 }
 
 void AP_InertialSensor_LIS331::setI2CAddr(uint8_t address)
@@ -167,7 +166,7 @@ void AP_InertialSensor_LIS331::readAxes(int16_t &x, int16_t &y, int16_t &z)
   x = x >> 4;
   y = y >> 4;
   z = z >> 4;
-  raw_accel_400g = {(float)x,(float)y,(float)z};
+  // raw_accel_400g = {(float)x,(float)y,(float)z};
 }
 
 uint8_t AP_InertialSensor_LIS331::readReg(uint8_t reg_address)
@@ -437,7 +436,15 @@ void AP_InertialSensor_LIS331::setIntThreshold(uint8_t threshold, uint8_t intSou
 
 void AP_InertialSensor_LIS331::LIS331_write(uint8_t reg_address, uint8_t *data, uint8_t len)
 {
-  _dev->write_register(reg_address, *data);
+  // _dev->write_register(reg_address, *data);
+  if (!device->get_semaphore()->take(5)) return;
+  device->transfer(&reg_address, sizeof(&reg_address), nullptr, 0);
+  for (int i = 0; i<len; i++) {
+    // device->get_semaphore();
+    device->transfer(&data[i], sizeof(data[i]), nullptr, 0);
+  }
+  device->get_semaphore()->give();
+  
   if (mode == USE_I2C)
   {
     // I2C write handling code
@@ -465,7 +472,11 @@ void AP_InertialSensor_LIS331::LIS331_write(uint8_t reg_address, uint8_t *data, 
 
 void AP_InertialSensor_LIS331::LIS331_read(uint8_t reg_address, uint8_t *data, uint8_t len)
 {
-  _dev->read_registers(reg_address, data, len);
+  // _dev->read_registers(reg_address, data, len);
+  if (!device->get_semaphore()->take(5)) return;
+  device->read_registers(reg_address, data, len);
+  device->get_semaphore()->give();
+
   if (mode == USE_I2C)
   {
     // I2C read handling code
@@ -532,14 +543,14 @@ void AP_InertialSensor_LIS331::read_fifo(){
     }
   }
 }*/
-
+/*
 void AP_InertialSensor_LIS331::fakeStart(){
   hal.console->printf("this does kinda work\n");
   uint8_t ctrlReg = CTRL_REG1;
   uint8_t powerModeData;
   power_mode pmode = NORMAL;
   //_dev->set_device_address(LIS331_ADDRESS);
-  _dev->transfer(&ctrlReg, 1, &powerModeData, sizeof(powerModeData));
+  device->transfer(&ctrlReg, 1, &powerModeData, sizeof(powerModeData));
   powerModeData &= ~0xe0; // Clear the top three bits
   powerModeData |= pmode<<5; // set the top three bits to our pmode value
 }
@@ -558,7 +569,7 @@ void AP_InertialSensor_LIS331::start(){
   uint8_t powerModeData;
   power_mode pmode = NORMAL;
   //i2c.transfer(&ctrlReg, 1, &powerModeData, sizeof(powerModeData));
-  _dev->read_registers(CTRL_REG1, &powerModeData, sizeof(powerModeData));
+  device->read_registers(CTRL_REG1, &powerModeData, sizeof(powerModeData));
 
   // The power mode is the high three bits of CTRL_REG1. The mode
   //  constants are the appropriate bit values left shifted by five, so we
@@ -568,21 +579,21 @@ void AP_InertialSensor_LIS331::start(){
   powerModeData &= ~0xe0; // Clear the top three bits
   powerModeData |= pmode<<5; // set the top three bits to our pmode value
   //LIS331_write(CTRL_REG1, &powerModeData, 1); // write the new value to CTRL_REG1
-  _dev->write_register(CTRL_REG1, powerModeData, 1); // write the new value to CTRL_REG1
+  device->write_register(CTRL_REG1, powerModeData, 1); // write the new value to CTRL_REG1
 
   //axesEnable
   uint8_t axesEnableData;
   //i2c.transfer(&ctrlReg, 1, &axesEnableData, sizeof(axesEnableData));
-  _dev->read_registers(CTRL_REG1, &axesEnableData, sizeof(axesEnableData));
+  device->read_registers(CTRL_REG1, &axesEnableData, sizeof(axesEnableData));
   axesEnableData |= 0x07;
   //LIS331_write(CTRL_REG1, &axesEnableData, 1);
-  _dev->write_register(CTRL_REG1, axesEnableData, 1);
+  device->write_register(CTRL_REG1, axesEnableData, 1);
 
   uint8_t data = 0;
   //for (int i = 0x21; i < 0x25; i++) LIS331_write(i,&data,1);
-  for (int i = 0x21; i < 0x25; i++) _dev->write_register(i, data, 1);
+  for (int i = 0x21; i < 0x25; i++) device->write_register(i, data, 1);
   //for (int i = 0x30; i < 0x37; i++) LIS331_write(i,&data,1);
-  for (int i = 0x30; i < 0x37; i++) _dev->write_register(i, data, 1);
+  for (int i = 0x30; i < 0x37; i++) device->write_register(i, data, 1);
 }
 
 //Try to mimic LSM9DS0's _read_data_transaction_a functions
@@ -599,7 +610,7 @@ void AP_InertialSensor_LIS331::read_data_transaction_a(int16_t &x, int16_t &y, i
   uint8_t reg[6] = {OUT_X_L, OUT_X_H, OUT_Y_L, OUT_Y_H, OUT_Z_L, OUT_Z_H};
   for (int i = 0; i < 6; i++) {
     //i2c.transfer(&reg[i], 1, &data[i], sizeof(data[i]));
-    _dev->read_registers(reg[i], &data[i], sizeof(data[i]));
+    device->read_registers(reg[i], &data[i], sizeof(data[i]));
   }
   // The data that comes out is 12-bit data, left justified, so the lower
   //  four bits of the data are always zero. We need to right shift by four,
@@ -612,4 +623,4 @@ void AP_InertialSensor_LIS331::read_data_transaction_a(int16_t &x, int16_t &y, i
   y = y >> 4;
   z = z >> 4;
   raw_accel_400g = {(float)x,(float)y,(float)z};
-}
+}*/
