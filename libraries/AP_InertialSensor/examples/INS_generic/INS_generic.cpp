@@ -50,6 +50,8 @@ void removeBias(void);
 void integrate(void);
 void logToMem(void);
 void xferToSD(void);
+void print_file(std::string name);
+void runFileViewer(void);
 
 //void Log_Write_IMUA(void);
 
@@ -417,7 +419,7 @@ void loop(void) {
                 if( tof >= tofmax ) { // || time > tmax
                     mode = POST;
                     hal.console->printf(" post flight %f6.3\n", tof);
-                    continue;
+                    return;
                 }
                 break;
 
@@ -463,9 +465,6 @@ void loop(void) {
 
                 while(true) {
                     runFileViewer();
-                }
-                    
-
                 }
                 break;
         }  // switch case
