@@ -287,6 +287,62 @@ void print_file(std::string name) {
     fd.close();
 }
 
+void runFileViewer() {
+
+    int user_input;
+
+    // flush any user input
+    while (hal.console->available()) {
+        hal.console->read();
+    }
+
+    std::string files[50];
+
+    hal.console->printf("\nAvailable Files:\n----------------\n");
+    
+    DIR *dir;
+    struct dirent *ent;
+    int num_files = 0;
+    if ((dir = opendir ("/APM")) != NULL) {
+        // print all .csv files within directory
+        while ((ent = readdir (dir)) != NULL) {
+            std::string name = ent->d_name;
+            int len = name.length();
+
+            if (len >= 4 && name.substr(name.length()-4) == ".csv") {
+                files[num_files] = name;
+                num_files++;
+                hal.console->printf ("%u. %s\n\n", num_files, ent->d_name);
+            }
+        }
+        closedir (dir);
+    }
+
+    hal.console->printf("Select number of file to print\n>");
+                        
+    // wait for user input
+    while (!hal.console->available()) {
+        hal.scheduler->delay(20);
+    }
+
+    // read in user input
+    if (hal.console->available()) {
+        user_input = (int) hal.console->read() - 48; // offset for ascii value
+
+        if (0 < user_input && user_input <= num_files){
+            print_file(files[user_input-1]);
+        }
+        else{
+            hal.console->printf("Not a valid Input\n");
+        }
+    }
+
+    // wait for user input
+    while (!hal.console->available()) {
+        hal.scheduler->delay(20);
+    }
+}
+
 void loop(void) {
 
     // flush any user input
@@ -405,59 +461,9 @@ void loop(void) {
 
             case POST:
 
-                int user_input;
-
-                while (true) {
-                    // flush any user input
-                    while (hal.console->available()) {
-                        hal.console->read();
-                    }
-
-                    std::string files[50];
-
-                    hal.console->printf("\nAvailable Files:\n----------------\n");
-                    
-                    DIR *dir;
-                    struct dirent *ent;
-                    int num_files = 0;
-                    if ((dir = opendir ("/APM")) != NULL) {
-                        // print all .csv files within directory
-                        while ((ent = readdir (dir)) != NULL) {
-                            std::string name = ent->d_name;
-                            int len = name.length();
-
-                            if (len >= 4 && name.substr(name.length()-4) == ".csv") {
-                                files[num_files] = name;
-                                num_files++;
-                                hal.console->printf ("%u. %s\n\n", num_files, ent->d_name);
-                            }
-                        }
-                        closedir (dir);
-                    }
-
-                    hal.console->printf("Select number of file to print\n>");
-                                        
-                    // wait for user input
-                    while (!hal.console->available()) {
-                        hal.scheduler->delay(20);
-                    }
-
-                    // read in user input
-                    if (hal.console->available()) {
-                        user_input = (int) hal.console->read() - 48; // offset for ascii value
-
-                        if (0 < user_input && user_input <= num_files){
-                            print_file(files[user_input-1]);
-                        }
-                        else{
-                            hal.console->printf("Not a valid Input\n");
-                        }
-                    }
-
-                    // wait for user input
-                    while (!hal.console->available()) {
-                        hal.scheduler->delay(20);
-                    }
+                while(true) {
+                    runFileViewer();
+                }
                     
 
                 }
