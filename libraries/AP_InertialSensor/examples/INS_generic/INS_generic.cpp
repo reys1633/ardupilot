@@ -289,6 +289,32 @@ void print_file(std::string name) {
     fd.close();
 }
 
+void showFiles() {
+    std::string files[50];
+
+    hal.console->printf("\nAvailable Files:\n----------------\n");
+    
+    DIR *dir;
+    struct dirent *ent;
+    int num_files = 0;
+    if ((dir = opendir ("/APM")) != NULL) {
+        // print all .csv files within directory
+        while ((ent = readdir (dir)) != NULL) {
+            std::string name = ent->d_name;
+            int len = name.length();
+
+            if (len >= 4 && name.substr(name.length()-4) == ".csv") {
+                files[num_files] = name;
+                num_files++;
+                hal.console->printf ("%u. %s\n\n", num_files, ent->d_name);
+            }
+        }
+        closedir (dir);
+    }
+
+    hal.console->printf("Select number of file to print\n>");
+}
+
 void runFileViewer() {
 
     int user_input;
@@ -403,6 +429,7 @@ void loop(void) {
                 if(calCnts >= 500) {
                     mode = PRE;
                     hal.console->printf(" mode=>Pre\n");
+                    hal.console->printf("Press any key to show files\n>");
                 }
                 break;
             case PRE :
@@ -413,12 +440,18 @@ void loop(void) {
                     launched = true;
                     mode = FLT;
                 }
+
+                if (hal.console->available()) {
+                    mode = POST;
+                    return;
+                }
                 break;
 
             case FLT :
                 if( tof >= tofmax ) { // || time > tmax
                     mode = POST;
                     hal.console->printf(" post flight %f6.3\n", tof);
+                    xferToSD();
                     return;
                 }
                 break;
@@ -426,7 +459,6 @@ void loop(void) {
             case POST :
                 stopex = true;
                 acs.shutdown();
-                xferToSD();
                 hal.scheduler->delay(1000);
         } // switch( mode )
 
@@ -446,7 +478,7 @@ void loop(void) {
                 vCmd = acs.update( ypCmd, gyrof, rpy, time, tof );
                 /////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////
-                logToMem();
+                // logToMem();
                 break;
 
             case FLT:
@@ -459,6 +491,13 @@ void loop(void) {
                 /////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////
                 logToMem();
+
+                if( outcnt++ % 50 != 0 ) {
+                    continue;
+                }
+                hal.console->printf("t%6.3f  tof%6.3f  q%7.3f  r%7.3f  p%7.3f  y%7.3f  gb1 %7.3f  gb2%7.3f cnt%6d  acc%6.2f\n",
+                    time, tof, gyrof[1], gyrof[2], rpy[1]*R2D, rpy[2]*R2D, gyrBia[1], gyrBia[2], outcnt, accel[0] );
+
                 break;
 
             case POST:
@@ -469,11 +508,6 @@ void loop(void) {
                 break;
         }  // switch case
 
-        if( outcnt++ % 50 != 0 ) {
-            continue;
-        }
-        hal.console->printf("t%6.3f  tof%6.3f  q%7.3f  r%7.3f  p%7.3f  y%7.3f  gb1 %7.3f  gb2%7.3f cnt%6d  acc%6.2f\n",
-            time, tof, gyrof[1], gyrof[2], rpy[1]*R2D, rpy[2]*R2D, gyrBia[1], gyrBia[2], outcnt, accel[0] );
     } // while( !stopex )
 
 }// end of "loop" method
