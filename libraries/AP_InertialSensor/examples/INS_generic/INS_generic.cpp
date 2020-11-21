@@ -52,6 +52,7 @@ void logToMem(void);
 void xferToSD(void);
 void print_file(std::string name);
 void runFileViewer(void);
+void showFiles(void);
 
 //void Log_Write_IMUA(void);
 
@@ -355,7 +356,10 @@ void runFileViewer() {
 
     // read in user input
     if (hal.console->available()) {
-        user_input = (int) hal.console->read() - 48; // offset for ascii value
+        uint8_t buf[2];
+        user_input = hal.console->read(buf, (uint16_t) 2); // offset for ascii value
+        hal.console->printf("%u", user_input);
+        //user_input = (int) user_input - 48;
 
         if (0 < user_input && user_input <= num_files){
             print_file(files[user_input-1]);
